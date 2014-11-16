@@ -29,8 +29,7 @@ def handle_message(ws, smsg):
                  }
 
         params = "act=login&name=%s&pass=%s&challengekeyid=%s&challenge=%s" % (username, password, smsg[1],smsg[2])
-        print params
-        print values['challengekeyid']
+        
         r = requests.post(url, data=values)
 
         response = json.loads(r.text[1:])
@@ -52,7 +51,7 @@ def handle_message(ws, smsg):
         #if utils.condense(smsg[2]) == 'scotteh':
         if 1 == 1:
             if smsg[3] == 'who is a fage':
-                ws.send('showderp|%s is a fage' % random.choice(ws.currentusers))
+                ws.send('ws.room|%s is a fage' % random.choice(ws.currentusers))
                     
     elif smsg[0] == 'J':
         ws.currentusers.append(smsg[1])
@@ -86,4 +85,16 @@ def handle_pm(ws, sender, msg):
 def handle_command(ws, command, args):	
     for case in utils.switch(command):
         if case('hello'):
-            ws.send_pm('scotteh', 'hi there scotteh!!!')
+            send_pm(ws, 'scotteh', 'hi there scotteh!!!')
+
+def parse_message(self, m):
+    if len(m.split('|')) > 1:
+        return m.split("|")[1:]  # Gets rid of the empty string
+    else:
+        return m.split("|")
+
+def send_msg(ws, room, msg):
+    ws.send("%s|%s" % (room, msg))
+
+def send_pm(ws, target, msg):
+    send_msg(ws, '', '/pm %s, %s' % (target, msg))

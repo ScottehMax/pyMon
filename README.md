@@ -12,3 +12,7 @@ If you have [pip](https://pypi.python.org/pypi/pip) installed, you can just run 
 ### Running
 
 Once you've created a configuration file using `config-example.ini` as a base, simply run `connect.py` to start the bot.
+
+--------
+
+This project is licensed under the terms of the MIT license.

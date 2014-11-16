@@ -26,24 +26,12 @@ class Chatbot(WebSocketClient):
         msgs = str(m).split('\n')  # PS sometimes sends multiple messages split by newlines...
         for message in msgs:
             print message
-            smsg = self.parse_message(message)
+            smsg = handlechat.parse_message(self, message)
             #print smsg
             handlechat.handle_message(self, smsg)
-        
-    def parse_message(self, m):
-        if len(m.split('|')) > 1:
-            return m.split("|")[1:]  # Gets rid of the empty string
-        else:
-            return m.split("|")
 
     def join_room(self, room):
         self.send("|/join " + room)
-
-    def send_msg(self, room, msg):
-        self.send("%s|%s" % (room, msg))
-
-    def send_pm(self, target, msg):
-        self.send_msg('', '/pm %s, %s' % (target, msg))
 
 if __name__ == '__main__':
     try:
