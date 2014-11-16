@@ -1,0 +1,4 @@
+debug/
+Procfile
+*.pyc
+config.ini

@@ -1,0 +1,4 @@
+grequests==0.2.0
+requests==2.4.3
+virtualenv==1.11.6
+ws4py==0.3.4
