@@ -1,26 +1,29 @@
 import re
+import json
+
+import requests
 
 def condense(string):
     return (re.sub(r'[^A-Za-z0-9]', '', string)).lower()
 
-class switch(object):
-    # Taken from the following URL to allow for readable switch-like syntax in python:
-    # http://code.activestate.com/recipes/410692-readable-switch-construction-without-lambdas-or-di/history/8/
-    def __init__(self, value):
-        self.value = value
-        self.fall = False
+def login(username, password, challenge, challengekeyid):
+    url = 'http://play.pokemonshowdown.com/action.php'
+    values = {'act': 'login',
+              'name': username,
+              'pass': password,
+              'challengekeyid': challengekeyid,
+              'challenge': challenge
+             }
 
-    def __iter__(self):
-        """Return the match method once, then stop"""
-        yield self.match
-        raise StopIteration
-    
-    def match(self, *args):
-        """Indicate whether or not to enter a case suite"""
-        if self.fall or not args:
-            return True
-        elif self.value in args:
-            self.fall = True
-            return True
-        else:
-            return False
+    r = requests.post(url, data=values)
+
+    print 'text', r.text
+
+    try:
+        response = json.loads(r.text[1:])  # the JSON response starts with a ]
+    except:
+        return None
+    assertion = response['assertion']
+
+    return assertion
+

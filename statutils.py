@@ -34,14 +34,14 @@ def statcalc(stat, base, iv, ev, level, nature):
     
     # This feels awful.
     if boosts['plus'] == stat:
-        if boosts['minus'] == stat:
+        if boosts['minus'] == stat:  # If both
             naturemod = 1.0
-        else:
+        else:                        # If only plus
             naturemod = 1.1
-    elif boosts['minus'] == stat:
+    elif boosts['minus'] == stat:    # If only minus
         naturemod = 0.9
-    else:
-        naturemod = 1
+    else:                            # If this stat isn't affected by the nature
+        naturemod = 1.0
     
     # Double int() is because the result is rounded down before naturemod is applied, 
     # then rounded down again... thanks, gamefreak!
