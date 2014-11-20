@@ -5,6 +5,7 @@ import random
 
 import utils
 
+
 class ChatHandler:
     def __init__(self, cb):
         # these instance variables are just for convenience
@@ -19,7 +20,9 @@ class ChatHandler:
 
     def initialise_queue(self):
         self.queue = Queue()
-        queue_worker = Thread(target=self.run_queue, name='message_queue', args=[self.queue])
+        queue_worker = Thread(target=self.run_queue,
+                              name='message_queue',
+                              args=[self.queue])
         queue_worker.start()
 
     def run_queue(self, queue):
@@ -40,35 +43,34 @@ class ChatHandler:
     def send_pm(self, target, msg):
         self.send_msg('', '/pm %s, %s' % (target, msg))
 
-    def handle(self, message, room='lobby'):
-        if message[0].lower == 'j':
-            self.currentusers.append(message[1])
+    def handle(self, msg, room='lobby'):
+        if msg[0].lower == 'j':
+            self.currentusers.append(msg[1])
 
-        elif message[0].lower == 'l':
+        elif msg[0].lower == 'l':
             for user in self.currentusers:
-                if utils.condense(user) == utils.condense(message[1]):
+                if utils.condense(user) == utils.condense(msg[1]):
                     self.currentusers.remove(user)
 
-        elif message[0].lower == 'n':
-            newuser, olduser = message[1], message[2]
+        elif msg[0].lower == 'n':
+            newuser, olduser = msg[1], msg[2]
             for user in self.currentusers:
-                if utils.condense(user) == utils.condense(message[2]):
+                if utils.condense(user) == utils.condense(msg[2]):
                     self.currentusers.remove(user)
-                    self.currentusers.append(message[1])
+                    self.currentusers.append(msg[1])
 
-        elif message[0] == 'users':
+        elif msg[0] == 'users':
             self.currentusers = []
-            for user in message[1].split(',')[1:]:
+            for user in msg[1].split(',')[1:]:
                 self.currentusers.append(user)
             print self.currentusers
 
-        elif message[0] == 'c:':
-            if message[3] == 'who is a nerd':
+        elif msg[0] == 'c:':
+            if msg[3] == 'who is a nerd':
                 self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers))
-            elif utils.condense(message[2]) == 'scotteh' and message[3] == 'he':
+            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'he':
                 self.send_msg(room, 'has')
                 self.send_msg(room, 'no')
                 self.send_msg(room, 'style')
-
-
-
+            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'roll':
+                self.send_msg(room, '!roll 100')

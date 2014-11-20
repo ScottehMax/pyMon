@@ -3,8 +3,10 @@ import json
 
 import requests
 
+
 def condense(string):
     return (re.sub(r'[^A-Za-z0-9]', '', string)).lower()
+
 
 def login(username, password, challenge, challengekeyid):
     url = 'http://play.pokemonshowdown.com/action.php'
@@ -13,7 +15,7 @@ def login(username, password, challenge, challengekeyid):
               'pass': password,
               'challengekeyid': challengekeyid,
               'challenge': challenge
-             }
+              }
 
     r = requests.post(url, data=values)
 
@@ -26,4 +28,3 @@ def login(username, password, challenge, challengekeyid):
     assertion = response['assertion']
 
     return assertion
-

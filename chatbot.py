@@ -6,6 +6,7 @@ from ws4py.client.threadedclient import WebSocketClient
 import utils
 import chathandler
 
+
 class Chatbot(WebSocketClient):
 
     def opened(self):
@@ -22,36 +23,39 @@ class Chatbot(WebSocketClient):
         self.currentusers = []
 
         self.ch = chathandler.ChatHandler(self)
-        
+
     def closed(self, code, reason=None):
-        # Note: add automatic checking whether still connected and if not, attempt to reconnect... see ps-chatbot
+        # Note: add automatic checking whether still connected
+        # if not, attempt to reconnect...
         print "Closed down", code, reason
 
     def received_message(self, m):
         global battle_formats
 
-        messages = str(m).split('\n')  # PS sometimes sends multiple messages split by newlines...
+        # PS sometimes sends multiple messages split by newlines...
+        messages = str(m).split('\n')
 
         if messages[0][0] == '>':
             room = messages[0][1:]
 
         for rawmessage in messages:
             print rawmessage
-            message = rawmessage.split("|")
+            msg = rawmessage.split("|")
 
-            if len(message) < 2: continue
+            if len(msg) < 2:
+                continue
 
             battlepattern = re.compile('>battle')
 
-            if battlepattern.match(message[0]):
-                self.bh.handle(message, ws)
+            if battlepattern.match(msg[0]):
+                self.bh.handle(msg, ws)
 
-            downmsg = message[1].lower()
+            downmsg = msg[1].lower()
 
             if downmsg == 'challstr':
                 print '%s: Attempting to login...' % self.user
                 data = {}
-                assertion = utils.login(self.user, self.password, message[3], message[2])
+                assertion = utils.login(self.user, self.password, msg[3], msg[2])
 
                 if assertion is None:
                     raise Exception('%s: Could not login' % self.user)
@@ -59,15 +63,15 @@ class Chatbot(WebSocketClient):
                 self.send('|/trn %s,0,%s' % (self.user, assertion))
 
             elif downmsg == 'formats':
-                data = '|'.join(message[2:])
+                data = '|'.join(msg[2:])
 
                 # the next line takes all of the formats data PS sends on connection and turns it into a list
 
-                battle_formats = map(utils.condense, (re.sub(r'\|\d\|[^|]+', '' ,('|' + re.sub(r'[,#]', '', data)))).split('|'))[1:]
+                battle_formats = map(utils.condense, (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))).split('|'))[1:]
                 print battle_formats
 
             elif downmsg == 'updateuser':
-                if utils.condense(message[2]) == utils.condense(self.user):
+                if utils.condense(msg[2]) == utils.condense(self.user):
                     print '%s: Logged in!' % self.user
 
                     for r in self.rooms:
@@ -75,16 +79,14 @@ class Chatbot(WebSocketClient):
                         self.send('|/join %s' % r)
 
             elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users']:
-                self.ch.handle(message[1:], room)
+                self.ch.handle(msg[1:], room)
             elif downmsg == 'tournament':
-                self.ch.handle_tournament(message)
+                self.ch.handle_tournament(msg)
             elif downmsg == 'updatechallenges':
-                self.bh.handle_challenge(message)
+                self.bh.handle_challenge(msg)
 
-        
     def parse_message(self, m):
         if len(m.split('|')) > 1:
             return m.split("|")[1:]  # Gets rid of the empty string
         else:
             return m.split("|")
-
