@@ -37,6 +37,8 @@ class Chatbot(WebSocketClient):
 
         if messages[0][0] == '>':
             room = messages[0][1:]
+        else:
+            room = self.rooms[0]
 
         for rawmessage in messages:
             print rawmessage
@@ -78,12 +80,14 @@ class Chatbot(WebSocketClient):
                         print '%s: Joining room %s.' % (self.user, r)
                         self.send('|/join %s' % r)
 
-            elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users']:
+            elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users', 'raw']:
                 self.ch.handle(msg[1:], room)
             elif downmsg == 'tournament':
-                self.ch.handle_tournament(msg)
+                # self.ch.handle_tournament(msg)
+                print 'not implemented handle_tournament'
             elif downmsg == 'updatechallenges':
-                self.bh.handle_challenge(msg)
+                # self.bh.handle_challenge(msg)
+                print 'not implemented handle_challenge'
 
     def parse_message(self, m):
         if len(m.split('|')) > 1:

@@ -19,8 +19,6 @@ def login(username, password, challenge, challengekeyid):
 
     r = requests.post(url, data=values)
 
-    print 'text', r.text
-
     try:
         response = json.loads(r.text[1:])  # the JSON response starts with a ]
     except:
