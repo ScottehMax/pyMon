@@ -82,7 +82,9 @@ class ChatHandler:
         elif msg[0] == 'raw':
             print 'fired raw'
             if msg[1].startswith('<div class="infobox">Random number'):
-                if msg[1][-7] == msg[1][-8]:
+                if msg[1][-7] == msg[1][-8] == msg[1][-9]:
+                    self.send_msg(room, 'nice trips')
+                elif msg[1][-7] == msg[1][-8]:
                     self.send_msg(room, 'nice dubs')
 
     def beacon(self, users):

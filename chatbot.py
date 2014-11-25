@@ -5,6 +5,7 @@ from ws4py.client.threadedclient import WebSocketClient
 
 import utils
 import chathandler
+#import battle
 
 
 class Chatbot(WebSocketClient):
@@ -23,6 +24,7 @@ class Chatbot(WebSocketClient):
         self.currentusers = []
 
         self.ch = chathandler.ChatHandler(self)
+        #self.bh = battle.BattleHandler(self.ch)
 
     def closed(self, code, reason=None):
         # Note: add automatic checking whether still connected
