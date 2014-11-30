@@ -1,5 +1,7 @@
 import json
 import random
+import re
+import time
 
 import utils
 import battleutils
@@ -48,6 +50,7 @@ class BattleAdapter:
         self.id = args['id']
         self.ch = args['ch']
         self.rqid = 0
+        self.lastmove, self.waiting = None, False  # Bleugh
 
         # self.battle = battleutils.Battle({'id': self.id})
 
@@ -76,11 +79,11 @@ class BattleAdapter:
 
         possiblemoves = []
 
-        if 'trapped' in active:
+        if active is not None and 'trapped' in active:
             return [active['moves'][0]['move']]
 
         for move in active['moves']:
-            if move['pp'] > 0 and move['disabled'] == False:
+            if move.get('pp') > 0 and not move.get('disabled'):
                 possiblemoves.append(move['move'])
 
         return possiblemoves
@@ -106,28 +109,31 @@ class BattleAdapter:
             self.canMegaEvo = False
             request = json.loads(msg[1])
 
-            if 'rqid' in request:
-                self.rqid = request['rqid']
+            self.rqid = request.get('rqid')
+            self.active = request.get('active', [None])[0]  # Note: check if active has multiple elements for doubles
 
-            if 'active' in request:
-                self.active = request['active'][0]  # Note: check if active has multiple elements for doubles
+            self.sidedata = request.get('side')
+            self.player = self.sidedata.get('id')
 
-            self.sidedata = request['side']
-            self.player = self.sidedata['id']
-
-            if 'canMegaEvo' in self.sidedata['pokemon'][0]:
-                self.canMegaEvo = self.sidedata['pokemon'][0]['canMegaEvo']
+            self.canMegaEvo = self.sidedata.get('pokemon')[0].get('canMegaEvo')
 
         elif msg[0] == 'turn':
-            if self.canMegaEvo:
-                self.ch.send_msg(self.id, "/move %s mega|%s" % (random.choice(self.pick_move(self.active)), self.rqid))
-            else:
-                self.ch.send_msg(self.id, "/move %s" % random.choice(self.pick_move(self.active)))
+            move_msg = '/move %s' % random.choice(self.pick_move(self.active))
+            self.ch.send_msg(self.id, move_msg + '|' + str(self.rqid) if not self.canMegaEvo else move_msg + 'mega |' + str(self.rqid))
 
         elif msg[0] == 'teampreview':
             self.ch.send_msg(self.id, "/team %s|%s" % (random.randint(1, 6), self.rqid))
 
         elif msg[0] == 'faint' and msg[1][0:2] == self.player:
+            if self.lastmove in {'U-turn', 'Volt Switch'}:
+                # The opponent needs to send out their 'mon first
+                self.waiting = True
+            else:
+                self.ch.send_msg(self.id, '/switch %s|%s' % (random.choice(self.pick_alive_mons(self.sidedata)), self.rqid))
+
+        elif self.waiting and msg[0] == 'switch' and msg[1][0:2] != self.player:
+            # Opponent has sent out their 'mon
+            self.waiting = False
             self.ch.send_msg(self.id, '/switch %s|%s' % (random.choice(self.pick_alive_mons(self.sidedata)), self.rqid))
 
         elif msg[0] == 'win':
@@ -137,6 +143,7 @@ class BattleAdapter:
             self.ch.send_msg(self.id, 'wow stop hacking anytime')
 
         elif msg[0] == 'move':
+            self.lastmove = msg[2]
             if msg[1][0:2] == self.player:
-                if msg[2] in ['U-turn', 'Volt Switch', 'Baton Pass', 'Parting Shot']:  # Horrible hack
+                if msg[2] in {'U-turn', 'Volt Switch', 'Baton Pass', 'Parting Shot'}:  # Horrible hack
                     self.ch.send_msg(self.id, '/switch %s' % random.choice(self.pick_alive_mons(self.sidedata)[1:]))

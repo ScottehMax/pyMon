@@ -1,5 +1,6 @@
 from threading import Thread
 from Queue import Queue
+from itertools import groupby
 import time
 import random
 
@@ -86,11 +87,18 @@ class ChatHandler:
                     self.send_msg(room, msg)
 
         elif msg[0] == 'raw':
+            getmap = {2: 'dubs',
+                      3: 'trips',
+                      4: 'quads',
+                      5: 'quints',
+                      6: 'sexts',
+                      7: 'septs'}
+
             if msg[1].startswith('<div class="infobox">Random number'):
-                if msg[1][-7] == msg[1][-8] == msg[1][-9]:
-                    self.send_msg(room, 'nice trips')
-                elif msg[1][-7] == msg[1][-8]:
-                    self.send_msg(room, 'nice dubs')
+                raw_msg = msg[1][21:-6]
+                get = getmap.get([[k,len(list(g))] for k, g in groupby(raw_msg)][-1][1])
+                if get:
+                    self.send_msg(room, 'nice ' + get)
 
     def beacon(self, users):
         # Highlights every user in the room

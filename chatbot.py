@@ -49,9 +49,9 @@ class Chatbot(WebSocketClient):
 
             msg = rawmessage.split("|")
 
-            battlepattern = re.compile('>battle')
+            BATTLE_REGEX = re.compile('>battle')
 
-            if battlepattern.match(msg[0]): 
+            if BATTLE_REGEX.match(msg[0]): 
                 # print 'handling battle message', msg
                 self.bh.handle(msg)
 
