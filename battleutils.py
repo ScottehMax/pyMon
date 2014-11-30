@@ -116,13 +116,13 @@ def dmg_calc(source, target, move):
 
 
 class Battle:
-    def __init__(self, id, p1, p2):
-        self.id = id
-        self.p1 = Player(p1)
-        self.p2 = Player(p2)
+    def __init__(self, **kwargs):
+        self.id = args.get('id')
+        self.p1 = Player(args.get('p1'))
+        self.p2 = Player(args.get('p2'))
 
     def add_to_team(self, player, mon):
-        player.team += [mon] 
+        player.team += {mon}
 
 
 class Player:

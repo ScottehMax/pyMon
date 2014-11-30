@@ -1,6 +1,5 @@
 import json
 import random
-import re
 import time
 
 import utils
@@ -52,7 +51,7 @@ class BattleAdapter:
         self.rqid = 0
         self.lastmove, self.waiting = None, False  # Bleugh
 
-        # self.battle = battleutils.Battle({'id': self.id})
+        #self.battle = battleutils.Battle(id=self.id, )
 
     def pick_alive_mons(self, sidedata):
         # Internal only. This prevents the bot from trying to send out a fainted mon
@@ -102,8 +101,18 @@ class BattleAdapter:
                 elif msg[2] == '!moves':
                     self.ch.send_msg(self.id, ', '.join(self.pick_move(self.active)))
 
+                elif msg[2] == '!item':
+                    self.ch.send_msg(self.id, self.sidedata['pokemon'][0]['item'])
+
                 elif msg[2].startswith('!custom'):
                     self.ch.send_msg(self.id, msg[2][8:])
+
+        elif msg[0] == 'player':
+            # Sets p1 and p2
+            if utils.condense(msg[2]) == utils.condense(self.ch.ws.user):
+                self.me = utils.condense(msg[1])
+            else:
+                self.opponent = utils.condense(msg[1])
 
         elif msg[0] == 'request':
             self.canMegaEvo = False
@@ -119,7 +128,7 @@ class BattleAdapter:
 
         elif msg[0] == 'turn':
             move_msg = '/move %s' % random.choice(self.pick_move(self.active))
-            self.ch.send_msg(self.id, move_msg + '|' + str(self.rqid) if not self.canMegaEvo else move_msg + 'mega |' + str(self.rqid))
+            self.ch.send_msg(self.id, move_msg + '|' + str(self.rqid) if not self.canMegaEvo else move_msg + ' mega |' + str(self.rqid))
 
         elif msg[0] == 'teampreview':
             self.ch.send_msg(self.id, "/team %s|%s" % (random.randint(1, 6), self.rqid))
