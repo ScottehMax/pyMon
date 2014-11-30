@@ -38,7 +38,11 @@ class ChatHandler:
             print 'Queue not initialised'
 
     def send_msg(self, room, msg):
-        self.queue_message("%s|%s" % (room, msg))
+        if len(room) > 0 and room[0] == '>':
+            room = room[1:]
+        message = "%s|%s" % (room, msg)
+        print '<<<', message
+        self.queue_message(message)
 
     def send_pm(self, target, msg):
         self.send_msg('', '/pm %s, %s' % (target, msg))
@@ -66,6 +70,8 @@ class ChatHandler:
             print self.currentusers
 
         elif msg[0] == 'c:':
+            # A few useless/humourous chatbot functions
+
             if msg[3] == 'who is a nerd':
                 self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers)[1:])
             elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'he':
@@ -74,13 +80,12 @@ class ChatHandler:
                 self.send_msg(room, 'style')
             elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'roll':
                 self.send_msg(room, '!roll 100')
-            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'beacon':
+            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == '!beacon':
                 userlist = self.beacon(self.currentusers)
                 for msg in userlist:
                     self.send_msg(room, msg)
 
         elif msg[0] == 'raw':
-            print 'fired raw'
             if msg[1].startswith('<div class="infobox">Random number'):
                 if msg[1][-7] == msg[1][-8] == msg[1][-9]:
                     self.send_msg(room, 'nice trips')
@@ -88,6 +93,8 @@ class ChatHandler:
                     self.send_msg(room, 'nice dubs')
 
     def beacon(self, users):
+        # Highlights every user in the room
+
         users2 = [] + users
         users2.reverse()
         string = ''

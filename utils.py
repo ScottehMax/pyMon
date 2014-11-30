@@ -26,3 +26,8 @@ def login(username, password, challenge, challengekeyid):
     assertion = response['assertion']
 
     return assertion
+
+def print_info(object):
+    for attrib in dir(object)[3:]:
+        print attrib, '-', getattr(object, attrib)
+

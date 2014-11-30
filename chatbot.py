@@ -5,7 +5,7 @@ from ws4py.client.threadedclient import WebSocketClient
 
 import utils
 import chathandler
-#import battle
+import battle
 
 
 class Chatbot(WebSocketClient):
@@ -24,7 +24,7 @@ class Chatbot(WebSocketClient):
         self.currentusers = []
 
         self.ch = chathandler.ChatHandler(self)
-        #self.bh = battle.BattleHandler(self.ch)
+        self.bh = battle.BattleHandler(self.ch)
 
     def closed(self, code, reason=None):
         # Note: add automatic checking whether still connected
@@ -38,21 +38,25 @@ class Chatbot(WebSocketClient):
         messages = str(m).split('\n')
 
         if messages[0][0] == '>':
-            room = messages[0][1:]
+            room = messages.pop(0)
         else:
             room = self.rooms[0]
 
         for rawmessage in messages:
-            print rawmessage
-            msg = rawmessage.split("|")
+            rawmessage = "%s\n%s" % (room, rawmessage)
 
-            if len(msg) < 2:
-                continue
+            print rawmessage
+
+            msg = rawmessage.split("|")
 
             battlepattern = re.compile('>battle')
 
-            if battlepattern.match(msg[0]):
-                self.bh.handle(msg, ws)
+            if battlepattern.match(msg[0]): 
+                # print 'handling battle message', msg
+                self.bh.handle(msg)
+
+            if len(msg) < 2:
+                continue
 
             downmsg = msg[1].lower()
 
@@ -88,8 +92,8 @@ class Chatbot(WebSocketClient):
                 # self.ch.handle_tournament(msg)
                 print 'not implemented handle_tournament'
             elif downmsg == 'updatechallenges':
-                # self.bh.handle_challenge(msg)
-                print 'not implemented handle_challenge'
+                self.bh.handle_challenge(msg)
+                #print 'not implemented handle_challenge'
 
     def parse_message(self, m):
         if len(m.split('|')) > 1:
