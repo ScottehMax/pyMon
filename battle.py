@@ -99,7 +99,8 @@ class BattleAdapter:
                     self.ch.send_msg(self.id, self.name_alive_mons(self.sidedata))
 
                 elif msg[2] == '!moves':
-                    self.ch.send_msg(self.id, ', '.join(self.pick_move(self.active)))
+                    if self.active is not None:
+                        self.ch.send_msg(self.id, ', '.join(self.pick_move(self.active)))
 
                 elif msg[2] == '!item':
                     self.ch.send_msg(self.id, self.sidedata['pokemon'][0]['item'])

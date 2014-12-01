@@ -49,15 +49,15 @@ class ChatHandler:
         self.send_msg('', '/pm %s, %s' % (target, msg))
 
     def handle(self, msg, room):
-        if msg[0].lower == 'j':
+        if msg[0].lower() == 'j':
             self.currentusers.append(msg[1])
 
-        elif msg[0].lower == 'l':
+        elif msg[0].lower() == 'l':
             for user in self.currentusers:
                 if utils.condense(user) == utils.condense(msg[1]):
                     self.currentusers.remove(user)
 
-        elif msg[0].lower == 'n':
+        elif msg[0].lower() == 'n':
             newuser, olduser = msg[1], msg[2]
             for user in self.currentusers:
                 if utils.condense(user) == utils.condense(msg[2]):
