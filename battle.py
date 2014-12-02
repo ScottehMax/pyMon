@@ -13,7 +13,7 @@ class BattleHandler:
 
     def handle(self, msg):
 
-        battle_id = msg.pop(0)[1:-1]
+        battle_id = msg.pop(0)[1:-1].split('\n')[0]
 
         if battle_id not in self.battles:
             print battle_id, 'is new battle'

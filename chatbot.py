@@ -40,7 +40,7 @@ class Chatbot(WebSocketClient):
         if messages[0][0] == '>':
             room = messages.pop(0)
         else:
-            room = self.rooms[0]
+            room = 'no room'
 
         for rawmessage in messages:
             rawmessage = "%s\n%s" % (room, rawmessage)
