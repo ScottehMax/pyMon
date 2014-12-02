@@ -71,9 +71,9 @@ class ChatHandler:
             print self.currentusers
 
         elif msg[0] == 'c:':
-            # A few useless/humourous chatbot functions
+            # A few useless/humorous chatbot functions
 
-            if msg[3] == 'who is a nerd':
+            if utils.condense(msg[2]) == 'scotteh' and msg[3] == 'who is a nerd':
                 self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers)[1:])
             elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'he':
                 self.send_msg(room, 'has')
