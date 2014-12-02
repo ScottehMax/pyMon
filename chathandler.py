@@ -4,6 +4,7 @@ from itertools import groupby
 import time
 import random
 
+import prediction
 import utils
 
 
@@ -85,6 +86,38 @@ class ChatHandler:
                 userlist = self.beacon(self.currentusers)
                 for msg in userlist:
                     self.send_msg(room, msg)
+            elif utils.condense(msg[2]) == 'scotteh' and msg[3].startswith('.eval'):
+                command = msg[3][6:]
+                try:
+                    result = eval(command)
+                    self.send_msg(room, result)
+                except Exception as e:
+                    self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
+            elif utils.condense(msg[2]) == 'scotteh' and msg[3].startswith('.exec'):
+                command = msg[3][6:]
+                try:
+                    exec(command)
+                    self.send_pm('scotteh', 'success')
+                except Exception as e:
+                    self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
+
+        elif msg[0] == 'pm':
+            if utils.condense(msg[1]) == 'scotteh':
+                if msg[3].startswith('.eval'):
+                    command = msg[3][6:]
+                    try:
+                        result = eval(command)
+                        self.send_pm('scotteh', result)
+                    except Exception as e:
+                        self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
+                elif msg[3].startswith('.exec'):
+                    command = msg[3][6:].split('\n')
+                    command = '\n'.join(command)
+                    try:
+                        exec(command)
+                        self.send_pm('scotteh', 'success')
+                    except Exception as e:
+                        self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
 
         elif msg[0] == 'raw':
             getmap = {2: 'dubs',
