@@ -50,32 +50,33 @@ class ChatHandler:
         self.send_msg('', '/pm %s, %s' % (target, msg))
 
     def handle(self, msg, room):
-        if msg[0].lower() == 'j':
-            self.currentusers.append(msg[1])
+        room = room[1:]
+        if msg[0].lower() == 'j' and msg[1] not in self.currentusers[room]:
+            self.currentusers[room].append(msg[1])
 
         elif msg[0].lower() == 'l':
-            for user in self.currentusers:
+            for user in self.currentusers[room]:
                 if utils.condense(user) == utils.condense(msg[1]):
-                    self.currentusers.remove(user)
+                    self.currentusers[room].remove(user)
 
         elif msg[0].lower() == 'n':
             newuser, olduser = msg[1], msg[2]
-            for user in self.currentusers:
+            for user in self.currentusers[room]:
                 if utils.condense(user) == utils.condense(msg[2]):
-                    self.currentusers.remove(user)
-                    self.currentusers.append(msg[1])
+                    self.currentusers[room].remove(user)
+                    self.currentusers[room].append(msg[1])
 
         elif msg[0] == 'users':
-            self.currentusers = []
+            self.currentusers[room] = []
             for user in msg[1].split(',')[1:]:
-                self.currentusers.append(user)
-            print self.currentusers
+                self.currentusers[room].append(user)
+            print self.currentusers[room]
 
         elif msg[0] == 'c:':
             # A few useless/humorous chatbot functions
 
             if utils.condense(msg[2]) == self.ws.master and msg[3] == 'who is a nerd':
-                self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers)[1:])
+                self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers[room])[1:])
             elif utils.condense(msg[2]) == self.ws.master and msg[3] == 'he':
                 self.send_msg(room, 'has')
                 self.send_msg(room, 'no')
@@ -83,7 +84,7 @@ class ChatHandler:
             elif utils.condense(msg[2]) == self.ws.master and msg[3] == 'roll':
                 self.send_msg(room, '!roll 100')
             elif utils.condense(msg[2]) == self.ws.master and msg[3] == '!beacon':
-                userlist = self.beacon(self.currentusers)
+                userlist = self.beacon(self.currentusers[room])
                 for msg in userlist:
                     self.send_msg(room, msg)
             elif utils.condense(msg[2]) == self.ws.master and msg[3].startswith('.eval'):

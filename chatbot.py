@@ -22,7 +22,7 @@ class Chatbot(WebSocketClient):
         self.rooms = self.config.get('Chatbot', 'rooms').split(',')
         self.master = self.config.get('Chatbot', 'master')
 
-        self.currentusers = []
+        self.currentusers = {}
 
         self.ch = chathandler.ChatHandler(self)
         self.bh = battle.BattleHandler(self.ch)
@@ -41,7 +41,7 @@ class Chatbot(WebSocketClient):
         if messages[0][0] == '>':
             room = messages.pop(0)
         else:
-            room = 'no room'
+            room = '>lobby'
 
         for rawmessage in messages:
             rawmessage = "%s\n%s" % (room, rawmessage)
