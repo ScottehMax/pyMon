@@ -20,6 +20,7 @@ class Chatbot(WebSocketClient):
         self.user = self.config.get('Chatbot', 'username')
         self.password = self.config.get('Chatbot', 'password')
         self.rooms = self.config.get('Chatbot', 'rooms').split(',')
+        self.master = self.config.get('Chatbot', 'master')
 
         self.currentusers = []
 

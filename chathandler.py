@@ -74,50 +74,50 @@ class ChatHandler:
         elif msg[0] == 'c:':
             # A few useless/humorous chatbot functions
 
-            if utils.condense(msg[2]) == 'scotteh' and msg[3] == 'who is a nerd':
+            if utils.condense(msg[2]) == self.ws.master and msg[3] == 'who is a nerd':
                 self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers)[1:])
-            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'he':
+            elif utils.condense(msg[2]) == self.ws.master and msg[3] == 'he':
                 self.send_msg(room, 'has')
                 self.send_msg(room, 'no')
                 self.send_msg(room, 'style')
-            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == 'roll':
+            elif utils.condense(msg[2]) == self.ws.master and msg[3] == 'roll':
                 self.send_msg(room, '!roll 100')
-            elif utils.condense(msg[2]) == 'scotteh' and msg[3] == '!beacon':
+            elif utils.condense(msg[2]) == self.ws.master and msg[3] == '!beacon':
                 userlist = self.beacon(self.currentusers)
                 for msg in userlist:
                     self.send_msg(room, msg)
-            elif utils.condense(msg[2]) == 'scotteh' and msg[3].startswith('.eval'):
+            elif utils.condense(msg[2]) == self.ws.master and msg[3].startswith('.eval'):
                 command = msg[3][6:]
                 try:
                     result = eval(command)
                     self.send_msg(room, result)
                 except Exception as e:
-                    self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
-            elif utils.condense(msg[2]) == 'scotteh' and msg[3].startswith('.exec'):
+                    self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
+            elif utils.condense(msg[2]) == self.ws.master and msg[3].startswith('.exec'):
                 command = msg[3][6:]
                 try:
                     exec(command)
-                    self.send_pm('scotteh', 'success')
+                    self.send_pm(self.ws.master, 'success')
                 except Exception as e:
-                    self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
+                    self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
 
         elif msg[0] == 'pm':
-            if utils.condense(msg[1]) == 'scotteh':
+            if utils.condense(msg[1]) == self.ws.master:
                 if msg[3].startswith('.eval'):
                     command = msg[3][6:]
                     try:
                         result = eval(command)
-                        self.send_pm('scotteh', result)
+                        self.send_pm(self.ws.master, result)
                     except Exception as e:
-                        self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
+                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
                 elif msg[3].startswith('.exec'):
                     command = msg[3][6:].split('\n')
                     command = '\n'.join(command)
                     try:
                         exec(command)
-                        self.send_pm('scotteh', 'success')
+                        self.send_pm(self.ws.master, 'success')
                     except Exception as e:
-                        self.send_pm('scotteh', str(e) + ': ' + e.__doc__)
+                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
 
         elif msg[0] == 'raw':
             getmap = {2: 'dubs',
