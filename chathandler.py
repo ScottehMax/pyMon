@@ -143,7 +143,7 @@ class ChatHandler:
         msgs = []
         while not len(users2) == 0:
             if len(string) + len(users2[-1]) < 300:
-                name = users2.pop()[1:]
+                name = users2.pop().decode('utf-8')[1:].encode('utf-8')
                 string += name + ' '
             else:
                 msgs.append(string)
