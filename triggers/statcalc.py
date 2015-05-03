@@ -45,13 +45,16 @@ class StatCalc(Trigger):
                         base = float(match_result.groups()[0])
                     elif i == 1:
                         o_level = float(match_result.groups()[0])
-                        if not asbase: level = o_level
+                        if not asbase:
+                            level = o_level
                     elif i == 2:
                         o_ev = float(match_result.groups()[0])
-                        if not asbase: ev = o_ev
+                        if not asbase:
+                            ev = o_ev
                     elif i == 3:
                         o_iv = float(match_result.groups()[0])
-                        if not asbase: iv = o_iv
+                        if not asbase:
+                            iv = o_iv
                     elif i == 4:
                         if asbase:
                             o_plus = float(match_result.groups()[0])
