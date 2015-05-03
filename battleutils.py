@@ -7,6 +7,7 @@ POKEDEX = json.load(open('./BattlePokedex.json'))
 TYPES = json.load(open('./BattleTypeChart.json'))
 MOVES = json.load(open('./BattleMovedex.json'))
 
+
 def natureboost(nature):
     table = {"Adamant": {"plus": "atk", "minus": "spa"},
              "Bashful": {},
@@ -36,19 +37,19 @@ def natureboost(nature):
     return table[nature.capitalize()]
 
 
-def statcalc_HP(base, iv, ev, level):
+def statcalc_hp(base, iv, ev, level):
     return int((((iv + 2*base + (ev/4.0) + 100) * level)/100.0) + 10)
 
 
 def statcalc(stat, base, iv, ev, level, nature):
     boosts = natureboost(nature)
 
-    if boosts['plus'] == stat:
+    if boosts.get('plus') == stat:
         if boosts['minus'] == stat:  # If both
             naturemod = 1.0
         else:  # If only plus
             naturemod = 1.1
-    elif boosts['minus'] == stat:  # If only minus
+    elif boosts.get('minus') == stat:  # If only minus
         naturemod = 0.9
     else:  # If this stat isn't affected by the nature
         naturemod = 1.0
@@ -56,6 +57,7 @@ def statcalc(stat, base, iv, ev, level, nature):
     # Double int() is because the result is rounded down before naturemod is
     # applied, then rounded down again... thanks, gamefreak!
     return int(int(((((iv + 2*base + (ev/4.0)) * level)/100.0) + 5)) * naturemod)
+
 
 def single_effect(source, target):
     multiplier_map = {0: 1,
@@ -69,7 +71,7 @@ def single_effect(source, target):
 def effectiveness(move, target):
     result = 1
 
-    for user_type in target['types']:
+    for user_type in target.types:
         result *= single_effect(MOVES[move]['type'], user_type)
 
     return result
@@ -115,34 +117,118 @@ def dmg_calc(source, target, move):
     return int((a * b * c + 2) * mod)
 
 
+def calculate_move_score(active, types, target, move):
+    move = utils.condense(move)
+
+    # Score is zero for all of these
+    blacklist = ['suckerpunch',
+                 'focuspunch',
+                 'fakeout',
+                 'return',
+                 'frustration',
+                 'snore',
+                 'dreameater',
+                 'lastresort',
+                 'explosion',
+                 'selfdestruct',
+                 'synchronoise',
+                 'belch',
+                 'trumpcard',
+                 'wringout'
+                 ]
+
+    badlist = ['gigaimpact',
+               'hyperbeam',
+               'rockwrecker',
+               'frenzyplant',
+               'hydrocannon',
+               'blastburn',
+               'roaroftime',
+               'skyattack',
+               'solarbeam',
+               'freezeshock',
+               'iceburn',
+               'doomdesire',
+               'futuresight ',
+               'leafstorm',
+               'overheat',
+               'dracometeor',
+               'psychoboost',
+               'superpower',
+               'hammerarm'
+               ]
+
+    if not MOVES.get(move):
+        return 0
+
+    if MOVES.get(move).get('category') == 'Status' or move in blacklist:
+        return 0
+
+    res = 1.0
+
+    for user_type in types:
+        if MOVES[move]['type'] == user_type:
+            res *= 1.5
+
+    if move in badlist:
+        res *= 0.5
+
+    res *= MOVES[move]['basePower']
+    if type(MOVES[move]['accuracy']) == int:
+        res *= (MOVES[move]['accuracy'] / 100.0)
+    res *= effectiveness(move, target)
+
+    return res
+
+
 class Battle:
+
     def __init__(self, **kwargs):
-        self.id = args.get('id')
-        self.p1 = Player(args.get('p1'))
-        self.p2 = Player(args.get('p2'))
+        # Initialises the battle state
+        # Pass in a dict with battle id, and the names of each player
+        self.id = kwargs.get('id')
 
     def add_to_team(self, player, mon):
-        player.team += {mon}
+        moninfo = mon.split(', ')
+        print moninfo
+
+        if len(moninfo) == 2:
+            moninfo.append('Genderless')
+
+        print 'new moninfo', moninfo
+        mon = Pokemon(species=moninfo[0], level=int(moninfo[1][1:]), gender=moninfo[2])
+        player.team.append(mon)
 
 
 class Player:
-    def __init__(self, username):
-        self.username = username
-        self.team = {}
+
+    def __init__(self, **kwargs):
+        self.username = kwargs.get('username')
+        self.id = kwargs.get('id')
+        self.team = []
 
 
 class Pokemon:
-    def __init__(self, args):
-        # You'd pass in a hash containing information on the 'mon here.
+
+    def __init__(self, **kwargs):
+        # You'd pass in a dict containing information on the 'mon here.
         # {'species': 'vaporeon', 'level': 100, 'moves': ['Surf', 'Ice Beam']} ... etc
 
-        for arg in args:
-            setattr(self, arg, args[arg])
+        # Initialising. They'll be overwritten if they exist
+        self.level = 100
+        self.ivs = [0] * 6
+        self.evs = [0] * 6
+        self.nature = 'Hardy'
 
-        dex = POKEDEX[self.species.lower()]
-        base_stats = dex['baseStats']
+        for arg in kwargs:
+            setattr(self, arg, kwargs.get(arg))
 
-        self.maxhp = statcalc_HP(base_stats['hp'], self.ivs[0], self.evs[0], self.level)
+        dex = POKEDEX.get(utils.condense(self.species))
+        base_stats = dex.get('baseStats')
+
+        self.types = dex.get('types')
+
+        self.maxhp = statcalc_hp(base_stats['hp'], self.ivs[0], self.evs[0], self.level)
         self.hp = self.maxhp
 
         self.attack = statcalc('atk', base_stats['atk'], self.ivs[1], self.evs[1], self.level, self.nature)

@@ -18,7 +18,6 @@ class Chatbot(WebSocketClient):
         self.config.readfp(open('./config.ini'))
 
         self.user = self.config.get('Chatbot', 'username')
-        self.password = self.config.get('Chatbot', 'password')
         self.rooms = self.config.get('Chatbot', 'rooms').split(',')
         self.master = self.config.get('Chatbot', 'master')
 
@@ -27,9 +26,12 @@ class Chatbot(WebSocketClient):
         self.ch = chathandler.ChatHandler(self)
         self.bh = battle.BattleHandler(self.ch)
 
+    def setup(self, timeout=1):
+        self.__init__(self.url, protocols=['http-only', 'chat'])
+        self.connect()
+        self.run_forever()
+
     def closed(self, code, reason=None):
-        # Note: add automatic checking whether still connected
-        # if not, attempt to reconnect...
         print "Closed down", code, reason
 
     def received_message(self, m):
@@ -44,15 +46,16 @@ class Chatbot(WebSocketClient):
             room = '>lobby'
 
         for rawmessage in messages:
+            is_battle = False
             rawmessage = "%s\n%s" % (room, rawmessage)
 
             print rawmessage
 
             msg = rawmessage.split("|")
 
-            BATTLE_REGEX = re.compile('>battle')
+            battle_regex = re.compile('>battle')
 
-            if BATTLE_REGEX.match(msg[0]): 
+            if battle_regex.match(msg[0]):
                 # print 'handling battle message', msg
                 self.bh.handle(msg)
 
@@ -61,10 +64,11 @@ class Chatbot(WebSocketClient):
 
             downmsg = msg[1].lower()
 
+            # print msg, ' - ', is_battle, ' - ', downmsg
+
             if downmsg == 'challstr':
                 print '%s: Attempting to login...' % self.user
-                data = {}
-                assertion = utils.login(self.user, self.password, msg[3], msg[2])
+                assertion = utils.login(self.user, self.config.get('Chatbot', 'password'), msg[3], msg[2])
 
                 if assertion is None:
                     raise Exception('%s: Could not login' % self.user)
@@ -76,25 +80,33 @@ class Chatbot(WebSocketClient):
 
                 # the next line takes all of the formats data PS sends on connection and turns it into a list
 
-                battle_formats = map(utils.condense, (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))).split('|'))[1:]
+                battle_formats = map(utils.condense,
+                                     (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))).split('|'))[1:]
                 print battle_formats
 
             elif downmsg == 'updateuser':
                 if utils.condense(msg[2]) == utils.condense(self.user):
+                    # Bot has logged in.
+
                     print '%s: Logged in!' % self.user
+
+                    self.ch.queue_worker.start()
 
                     for r in self.rooms:
                         print '%s: Joining room %s.' % (self.user, r)
-                        self.send('|/join %s' % r)
+                        self.ch.queue_message('|/join %s' % r)
 
-            elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users', 'raw']:
+            elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users', 'raw', ':', 'init']:
+                print 'match', downmsg
+                print msg
                 self.ch.handle(msg[1:], room)
+
             elif downmsg == 'tournament':
                 # self.ch.handle_tournament(msg)
                 print 'not implemented handle_tournament'
+
             elif downmsg == 'updatechallenges':
                 self.bh.handle_challenge(msg)
-                #print 'not implemented handle_challenge'
 
     def parse_message(self, m):
         if len(m.split('|')) > 1:

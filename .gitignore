@@ -1,4 +1,5 @@
 debug/
-Procfile
+.idea/
 *.pyc
+Procfile
 config.ini

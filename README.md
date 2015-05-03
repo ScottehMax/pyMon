@@ -3,8 +3,6 @@ pyMon
 
 Pokémon Showdown! chatbot, programmed in Python.
 
-**NOTE: This repository is extremely outdated and doesn't really reflect the current state of the codebase. It will be updated when I have time.**
-
 ### Installation
 
 If you have [pip](https://pypi.python.org/pypi/pip) installed, you can just run the following from the working directory:

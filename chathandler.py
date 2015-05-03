@@ -2,36 +2,89 @@ from threading import Thread
 from Queue import Queue
 from itertools import groupby
 import time
-import random
+import os
+import imp
+import inspect
 
-import prediction
-import utils
+import redis
+import concurrent.futures as futures
+
+from utils import condense
 
 
 class ChatHandler:
+    """Deals with most of the chat messages."""
+
     def __init__(self, cb):
         # these instance variables are just for convenience
         self.user = cb.user
-        self.password = cb.password
         self.config = cb.config
         self.ws = cb
+        self.thread_pool_executor = futures.ThreadPoolExecutor(max_workers=5)
 
-        self.currentusers = cb.currentusers
+        self.triggers = []
+        self.join_time = {}
 
+        self.current_users = cb.currentusers
+
+        self.battling = False  # self.config.get('Chatbot', 'battle')
+
+        redis_uname = self.config.get('External', 'redis_uname')
+        redis_pass = self.config.get('External', 'redis_pass')
+        redis_server = self.config.get('External', 'redis_server')
+        redis_url = os.getenv('REDISTOGO_URL', 'redis://%s:%s@%s' %
+                              (redis_uname, redis_pass, redis_server))
+
+        self.redis = redis.from_url(redis_url)
+        # self.redis = redis.from_url('redis://127.0.0.1:6379')
+
+        self.initialise_triggers(self.config)
         self.initialise_queue()
+
+    def initialise_triggers(self, config):
+        """Loads all triggers as specified in config."""
+        trigger_list = config.get('Chatbot', 'triggers').split(',')
+
+        print trigger_list  # debug
+
+        for trigger_filename in trigger_list:
+            modname, ext = os.path.splitext(trigger_filename)
+            trigger_file, path, descr = imp.find_module(modname, ['./triggers'])
+
+            if trigger_file:
+                mod = imp.load_module(modname, trigger_file, path, descr)
+                # This isn't very good... investigate a better solution.
+                self.triggers.append([x for x in inspect.getmembers(mod)[0:2] if x[0] != 'Trigger'][0][1](self))
+            else:
+                print 'Error loading Trigger %s' % trigger_filename
+
+        print self.triggers
 
     def initialise_queue(self):
         self.queue = Queue()
-        queue_worker = Thread(target=self.run_queue,
-                              name='message_queue',
-                              args=[self.queue])
-        queue_worker.start()
+        self.queue_worker = Thread(target=self.run_queue,
+                                   name='message_queue',
+                                   args=[self.queue])
+        self.queue_worker.daemon = True
+        # queue_worker.start()
+        # self.battle_thread = Thread(target=self.battling_queue,
+        #                             name='battling_queue')
+        # battle_thread.start()
 
     def run_queue(self, queue):
         while True:
             msg = queue.get()
-            self.ws.send(msg)
+            if msg is not None:
+                self.ws.send(msg)
             time.sleep(0.6)
+
+    def battling_queue(self):
+        while True:
+            while self.battling:
+                print 'Searching for a new battle...'
+                self.queue_message('|/utm')
+                self.queue_message('|/search randombattle')
+                time.sleep(30)
 
     def queue_message(self, msg):
         try:
@@ -43,67 +96,113 @@ class ChatHandler:
         if len(room) > 0 and room[0] == '>':
             room = room[1:]
         message = "%s|%s" % (room, msg)
-        print '<<<', message
         self.queue_message(message)
 
     def send_pm(self, target, msg):
         self.send_msg('', '/pm %s, %s' % (target, msg))
 
+    def call_trigger_response(self, trigger, m_info):
+        try:
+            response = trigger.response(m_info)
+            return response
+        except Exception as e:
+            self.send_pm(self.ws.master,
+                         "Crashed: %s, %s, %s" %
+                         (e.message, e.args, trigger))
+
+    def future_callback(self, future):
+        response = future.result()
+        room = future.room
+        m_info = future.m_info
+
+        if response:
+            who = m_info['who']
+            if type(response) != list:
+                response = [response]
+            for s_response in response:
+                if m_info['where'] == 'pm':
+                    s_response = '/pm %s, %s' % (who, s_response)
+                self.send_msg(room, s_response)
+
     def handle(self, msg, room):
-        room = room[1:]
-        if msg[0].lower() == 'j' and msg[1] not in self.currentusers[room]:
-            self.currentusers[room].append(msg[1])
+        room = room.replace('>', '')
 
-        elif msg[0].lower() == 'l':
-            for user in self.currentusers[room]:
-                if utils.condense(user) == utils.condense(msg[1]):
-                    self.currentusers[room].remove(user)
+        m_info = self.make_msg_info(msg, room, self.ws)
 
-        elif msg[0].lower() == 'n':
-            newuser, olduser = msg[1], msg[2]
-            for user in self.currentusers[room]:
-                if utils.condense(user) == utils.condense(msg[2]):
-                    self.currentusers[room].remove(user)
-                    self.currentusers[room].append(msg[1])
+        if m_info['where'] == ':':
+            # : messages contain an UNIX timestamp of when the room was joined
+            self.join_time[room] = m_info['all'][1]
 
-        elif msg[0] == 'users':
-            self.currentusers[room] = []
+        # Prevents the chatbot from responding to messages
+        # sent before it entered the room
+        if (m_info.get('who') and
+            ((m_info.get('when') and
+             int(m_info.get('when')) > int(self.join_time[room])) or
+             m_info.get('where') in {'j', 'l', 'pm'})):
+
+            for trigger in self.triggers:
+                # print 'testing trigger %s' % trigger
+                if trigger.match(m_info):
+                    print 'match %s' % trigger
+                    future = self.thread_pool_executor.submit(self.call_trigger_response, trigger, m_info)
+                    future.room = room
+                    future.m_info = m_info
+                    future.add_done_callback(self.future_callback)
+
+                    # Found a match, no need to keep
+                    # checking the other triggers
+                    break
+
+            # Allows execution and evaluation of arbitrary commands.
+            if m_info.get('where') == 'c':
+                if condense(m_info.get('who')) == self.ws.master and m_info['what'].startswith('.eval'):
+                    command = m_info['what'][5:]
+                    try:
+                        result = eval(command)
+                        self.send_msg(room, result)
+                    except Exception as e:
+                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
+
+                elif condense(m_info['who']) == self.ws.master and m_info['what'].startswith('.exec'):
+                    command = m_info['what'][5:]
+                    try:
+                        exec command
+                        self.send_pm(self.ws.master, 'success')
+                    except Exception as e:
+                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
+
+        # User list is currently hardcoded here. Might move this to triggers later on
+        elif m_info['where'] == 'j' and condense(m_info['who']) not in map(condense, self.current_users[room]):
+            self.current_users[room].append(msg[1])
+
+        elif m_info['where'] == 'l':
+            for user in self.current_users[room]:
+                if condense(user) == condense(msg[1]):
+                    self.current_users[room].remove(user)
+
+        elif m_info['where'] == 'n':
+            # |N| messages are of the format |N|(rank)newname|oldnameid
+            # Rank is a blank space if the nick is a regular user
+            # i.e. |N|@Scotteh|stretcher
+            newuser, olduser, userfound = msg[1], msg[2], False
+            for user in self.current_users[room]:
+                if condense(user) == condense(msg[2]):
+                    self.current_users[room].remove(user)
+                    userfound = True
+            if userfound:
+                self.current_users[room].append(msg[1])
+
+        elif m_info['where'] == 'users':
+            # Resets the userlist for the room if it exists, and creates a new one
+            # |users| messages are only sent on room join
+            self.current_users[room] = []
             for user in msg[1].split(',')[1:]:
-                self.currentusers[room].append(user)
-            print self.currentusers[room]
-
-        elif msg[0] == 'c:':
-            # A few useless/humorous chatbot functions
-
-            if utils.condense(msg[2]) == self.ws.master and msg[3] == 'who is a nerd':
-                self.send_msg(room, '%s is a nerd' % random.choice(self.currentusers[room])[1:])
-            elif utils.condense(msg[2]) == self.ws.master and msg[3] == 'he':
-                self.send_msg(room, 'has')
-                self.send_msg(room, 'no')
-                self.send_msg(room, 'style')
-            elif utils.condense(msg[2]) == self.ws.master and msg[3] == 'roll':
-                self.send_msg(room, '!roll 100')
-            elif utils.condense(msg[2]) == self.ws.master and msg[3] == '!beacon':
-                userlist = self.beacon(self.currentusers[room])
-                for msg in userlist:
-                    self.send_msg(room, msg)
-            elif utils.condense(msg[2]) == self.ws.master and msg[3].startswith('.eval'):
-                command = msg[3][6:]
-                try:
-                    result = eval(command)
-                    self.send_msg(room, result)
-                except Exception as e:
-                    self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-            elif utils.condense(msg[2]) == self.ws.master and msg[3].startswith('.exec'):
-                command = msg[3][6:]
-                try:
-                    exec(command)
-                    self.send_pm(self.ws.master, 'success')
-                except Exception as e:
-                    self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
+                self.current_users[room].append(user)
 
         elif msg[0] == 'pm':
-            if utils.condense(msg[1]) == self.ws.master:
+            if condense(msg[1]) == self.ws.master:
+                # Allows evaluation and execution of arbitrary commands by PM
+                # Hardcoded. Might add as a trigger eventually
                 if msg[3].startswith('.eval'):
                     command = msg[3][6:]
                     try:
@@ -115,38 +214,79 @@ class ChatHandler:
                     command = msg[3][6:].split('\n')
                     command = '\n'.join(command)
                     try:
-                        exec(command)
+                        exec command
                         self.send_pm(self.ws.master, 'success')
                     except Exception as e:
                         self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
 
-        elif msg[0] == 'raw':
+        elif msg[0] == 'raw' and int(time.time()) > int(self.join_time[room]):
+            print (int(time.time()), self.join_time[room])
+            # Get checker. Hardcoded.
             getmap = {2: 'dubs',
                       3: 'trips',
                       4: 'quads',
                       5: 'quints',
                       6: 'sexts',
-                      7: 'septs'}
+                      7: 'septs',
+                      8: 'octs'}
 
             if msg[1].startswith('<div class="infobox">Random number'):
-                raw_msg = msg[1][21:-6]
+                raw_msg = msg[1][21:-6]  # Strips the leading HTML
+
+                # Don't try and understand the next line, it takes raw_msg as input and 
+                # creates a list of size 2 lists splitting the raw_msg and showing the consecutive 
+                # characters, and returns the amount of consecutive characters at the end
+                # '11223344441122' => [['1', 2], ['2', 2], ['3', 2], ['4', 4], ['1', 2], ['2', 2]]
                 get = getmap.get([[k,len(list(g))] for k, g in groupby(raw_msg)][-1][1])
                 if get:
                     self.send_msg(room, 'nice ' + get)
 
-    def beacon(self, users):
-        # Highlights every user in the room
+    def make_msg_info(self, msg, room, ws):
+        info = {'where': msg[0],
+                'ws': ws,
+                'all': msg,
+                'ch': self,
+                'me': self.user
+                }
 
-        users2 = [] + users
-        users2.reverse()
-        string = ''
-        msgs = []
-        while not len(users2) == 0:
-            if len(string) + len(users2[-1]) < 300:
-                name = users2.pop().decode('utf-8')[1:].encode('utf-8')
-                string += name + ' '
-            else:
-                msgs.append(string)
-                string = ''
-        msgs.append(string)
-        return msgs
+        info['where'] = info['where'].lower()
+
+        if info['where'] == 'c:':
+            info.update({'where': 'c',
+                         'room': room,
+                         'who': msg[2].decode('utf-8')[1:].encode('utf-8'),
+                         'allwho': msg[2],
+                         'when': msg[1],
+                         'what': '|'.join(msg[3:])})
+
+        elif info['where'] == 'c':
+            info.update({'room': room,
+                         'who': msg[1].decode('utf-8')[1:].encode('utf-8'),
+                         'allwho': msg[1],
+                         'what': '|'.join(msg[2:])})
+
+        elif info['where'] == 'j' or info['where'] == 'l':
+            info.update({'room': room,
+                         'who': msg[1][1:],
+                         'allwho': msg[1],
+                         'what': ''})
+
+        elif info['where'] == 'n':
+            info.update({'room': room,
+                         'who': msg[1][1:],
+                         'allwho': msg[1],
+                         'oldname': msg[2],
+                         'what': ''})
+
+        elif info['where'] == 'users':
+            info.update({'room': room,
+                         'who': '',
+                         'what': msg[1]})
+
+        elif info['where'] == 'pm':
+            info.update({'who': msg[1][1:],
+                         'allwho': msg[1],
+                         'target': msg[2][1:],
+                         'what': msg[3]})
+
+        return info

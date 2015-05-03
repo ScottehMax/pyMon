@@ -21,13 +21,14 @@ def login(username, password, challenge, challengekeyid):
 
     try:
         response = json.loads(r.text[1:])  # the JSON response starts with a ]
-    except:
+    except Exception as e:
+        print e
         return None
     assertion = response['assertion']
 
     return assertion
 
-def print_info(object):
-    for attrib in dir(object)[3:]:
-        print attrib, '-', getattr(object, attrib)
 
+def print_info(obj):
+    for attrib in dir(obj)[3:]:
+        print attrib, '-', getattr(obj, attrib)
