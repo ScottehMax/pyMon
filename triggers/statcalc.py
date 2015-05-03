@@ -3,6 +3,7 @@ import re
 from triggers.trigger import Trigger
 from utils import condense
 
+
 class StatCalc(Trigger):
     def match(self, info):
         return info['what'][0:6] == '.base:'
