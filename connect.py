@@ -28,6 +28,7 @@ if __name__ == '__main__':
                 # Entire program exits when there are only daemon threads
                 bot.daemon = True
                 bot.start()
+                time.sleep(10)
         except (KeyboardInterrupt, SystemExit):
             # Entire program will exit, since MainThread is the only non-daemon thread
             # The sole purpose of this is so CTRL+C etc. will close the whole program

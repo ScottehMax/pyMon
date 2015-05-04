@@ -29,14 +29,18 @@ class ChatHandler:
 
         self.battling = False  # self.config.get('Chatbot', 'battle')
 
-        redis_uname = self.config.get('External', 'redis_uname')
-        redis_pass = self.config.get('External', 'redis_pass')
-        redis_server = self.config.get('External', 'redis_server')
-        redis_url = os.getenv('REDISTOGO_URL', 'redis://%s:%s@%s' %
-                              (redis_uname, redis_pass, redis_server))
+        try:
+            redis_uname = self.config.get('External', 'redis_uname')
+            redis_pass = self.config.get('External', 'redis_pass')
+            redis_server = self.config.get('External', 'redis_server')
+            redis_url = os.getenv('REDISTOGO_URL', 'redis://%s:%s@%s' %
+                                  (redis_uname, redis_pass, redis_server))
 
-        self.redis = redis.from_url(redis_url)
-        # self.redis = redis.from_url('redis://127.0.0.1:6379')
+            self.redis = redis.from_url(redis_url)
+            # self.redis = redis.from_url('redis://127.0.0.1:6379')
+        except Exception as e:
+            print e
+            print "Redis connection failed (ignore if you're not using redis)"
 
         self.initialise_triggers(self.config)
         self.initialise_queue()
