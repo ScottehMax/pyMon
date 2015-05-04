@@ -20,7 +20,7 @@ class ChatHandler:
         self.user = cb.user
         self.config = cb.config
         self.ws = cb
-        self.thread_pool_executor = futures.ThreadPoolExecutor(max_workers=5)
+        self.thread_pool_executor = futures.ThreadPoolExecutor(max_workers=20)
 
         self.triggers = []
         self.join_time = {}
@@ -131,7 +131,8 @@ class ChatHandler:
 
         if m_info['where'] == ':':
             # : messages contain an UNIX timestamp of when the room was joined
-            self.join_time[room] = m_info['all'][1]
+            # nvm, PS's time is usually off
+            self.join_time[room] = str(int(time.time()))
 
         # Prevents the chatbot from responding to messages
         # sent before it entered the room
@@ -142,16 +143,17 @@ class ChatHandler:
 
             for trigger in self.triggers:
                 # print 'testing trigger %s' % trigger
-                if trigger.match(m_info):
-                    print 'match %s' % trigger
-                    future = self.thread_pool_executor.submit(self.call_trigger_response, trigger, m_info)
-                    future.room = room
-                    future.m_info = m_info
-                    future.add_done_callback(self.future_callback)
-
-                    # Found a match, no need to keep
-                    # checking the other triggers
-                    break
+                try:
+                    if trigger.match(m_info):
+                        print 'match %s' % trigger
+                        future = self.thread_pool_executor.submit(self.call_trigger_response, trigger, m_info)
+                        future.room = room
+                        future.m_info = m_info
+                        future.add_done_callback(self.future_callback)
+                except Exception as e:
+                    self.send_pm(self.ws.master,
+                                 "Crashed in match: %s, %s, %s" %
+                                 (e.message, e.args, trigger))
 
             # Allows execution and evaluation of arbitrary commands.
             if m_info.get('where') == 'c':
@@ -170,6 +172,26 @@ class ChatHandler:
                         self.send_pm(self.ws.master, 'success')
                     except Exception as e:
                         self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
+
+            elif m_info.get('where') == 'pm':
+                if condense(m_info.get('who')) == self.ws.master:
+                    # Allows evaluation and execution of arbitrary commands by PM
+                    # Hardcoded. Might add as a trigger eventually
+                    if m_info['what'].startswith('.eval'):
+                        command = m_info['what'][6:]
+                        try:
+                            result = eval(command)
+                            self.send_pm(self.ws.master, result)
+                        except Exception as e:
+                            self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
+                    elif msg[3].startswith('.exec'):
+                        command = m_info['what'][6:].split('\n')
+                        command = '\n'.join(command)
+                        try:
+                            exec command
+                            self.send_pm(self.ws.master, 'success')
+                        except Exception as e:
+                            self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
 
         # User list is currently hardcoded here. Might move this to triggers later on
         elif m_info['where'] == 'j' and condense(m_info['who']) not in map(condense, self.current_users[room]):
@@ -199,27 +221,7 @@ class ChatHandler:
             for user in msg[1].split(',')[1:]:
                 self.current_users[room].append(user)
 
-        elif msg[0] == 'pm':
-            if condense(msg[1]) == self.ws.master:
-                # Allows evaluation and execution of arbitrary commands by PM
-                # Hardcoded. Might add as a trigger eventually
-                if msg[3].startswith('.eval'):
-                    command = msg[3][6:]
-                    try:
-                        result = eval(command)
-                        self.send_pm(self.ws.master, result)
-                    except Exception as e:
-                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-                elif msg[3].startswith('.exec'):
-                    command = msg[3][6:].split('\n')
-                    command = '\n'.join(command)
-                    try:
-                        exec command
-                        self.send_pm(self.ws.master, 'success')
-                    except Exception as e:
-                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-
-        elif msg[0] == 'raw' and int(time.time()) > int(self.join_time[room]):
+        if m_info['where'] == 'raw' and int(time.time()) > int(self.join_time[room]):
             print (int(time.time()), self.join_time[room])
             # Get checker. Hardcoded.
             getmap = {2: 'dubs',
@@ -230,7 +232,7 @@ class ChatHandler:
                       7: 'septs',
                       8: 'octs'}
 
-            if msg[1].startswith('<div class="infobox">Random number'):
+            if m_info['all'][1].startswith('<div class="infobox">Random number'):
                 raw_msg = msg[1][21:-6]  # Strips the leading HTML
 
                 # Don't try and understand the next line, it takes raw_msg as input and 
@@ -256,7 +258,7 @@ class ChatHandler:
                          'room': room,
                          'who': msg[2].decode('utf-8')[1:].encode('utf-8'),
                          'allwho': msg[2],
-                         'when': msg[1],
+                         'when': str(int(time.time())),
                          'what': '|'.join(msg[3:])})
 
         elif info['where'] == 'c':

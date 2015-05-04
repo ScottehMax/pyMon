@@ -80,9 +80,8 @@ class Chatbot(WebSocketClient):
 
                 # the next line takes all of the formats data PS sends on connection and turns it into a list
 
-                battle_formats = map(utils.condense,
+                self.ch.battle_formats = map(utils.condense,
                                      (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))).split('|'))[1:]
-                print battle_formats
 
             elif downmsg == 'updateuser':
                 if utils.condense(msg[2]) == utils.condense(self.user):
