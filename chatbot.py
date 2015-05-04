@@ -35,8 +35,6 @@ class Chatbot(WebSocketClient):
         print "Closed down", code, reason
 
     def received_message(self, m):
-        global battle_formats
-
         # PS sometimes sends multiple messages split by newlines...
         messages = str(m).split('\n')
 
@@ -78,10 +76,10 @@ class Chatbot(WebSocketClient):
             elif downmsg == 'formats':
                 data = '|'.join(msg[2:])
 
-                # the next line takes all of the formats data PS sends on connection and turns it into a list
-
+                # this takes all of the formats data PS sends on connection and turns it into a list
                 self.ch.battle_formats = map(utils.condense,
-                                     (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))).split('|'))[1:]
+                                             (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))
+                                              ).split('|'))[1:]
 
             elif downmsg == 'updateuser':
                 if utils.condense(msg[2]) == utils.condense(self.user):
