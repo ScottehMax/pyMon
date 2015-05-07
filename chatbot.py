@@ -51,7 +51,7 @@ class Chatbot(WebSocketClient):
 
             msg = rawmessage.split("|")
 
-            battle_regex = re.compile('>battle')
+            battle_regex = re.compile('>battle-')
 
             if battle_regex.match(msg[0]):
                 # print 'handling battle message', msg
