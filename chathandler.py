@@ -170,7 +170,7 @@ class ChatHandler:
                         self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
 
                 elif condense(m_info['who']) == self.ws.master and m_info['what'].startswith('.exec'):
-                    command = m_info['what'][5:]
+                    command = m_info['what'][6:]
                     try:
                         exec command
                         self.send_pm(self.ws.master, 'success')
