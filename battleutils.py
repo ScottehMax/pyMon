@@ -1,7 +1,10 @@
 import json
 import random
 
+from requests_futures.sessions import FuturesSession
+
 import utils
+
 
 POKEDEX = json.load(open('./BattlePokedex.json'))
 TYPES = json.load(open('./BattleTypeChart.json'))
@@ -179,6 +182,18 @@ def calculate_move_score(active, types, target, move):
     res *= effectiveness(move, target)
 
     return res
+
+
+def load_formats():
+    session = FuturesSession()
+
+    def bg_cb(sess, resp):
+        resp.data = utils.load_js_obj_literal(resp.text)
+
+    future = session.get('https://raw.githubusercontent.com/Zarel/Pokemon-Showdown/master/data/formats-data.js',
+                         background_callback=bg_cb)
+    r = future.result()
+    return r.data
 
 
 class Battle:
