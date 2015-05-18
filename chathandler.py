@@ -159,44 +159,6 @@ class ChatHandler:
                                  "Crashed in match: %s, %s, %s" %
                                  (e.message, e.args, trigger))
 
-            # Allows execution and evaluation of arbitrary commands.
-            if m_info.get('where') == 'c':
-                if condense(m_info.get('who')) == self.ws.master and m_info['what'].startswith('.eval'):
-                    command = m_info['what'][5:]
-                    try:
-                        result = eval(command)
-                        self.send_msg(room, result)
-                    except Exception as e:
-                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-
-                elif condense(m_info['who']) == self.ws.master and m_info['what'].startswith('.exec'):
-                    command = m_info['what'][6:]
-                    try:
-                        exec command
-                        self.send_pm(self.ws.master, 'success')
-                    except Exception as e:
-                        self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-
-            elif m_info.get('where') == 'pm':
-                if condense(m_info.get('who')) == self.ws.master:
-                    # Allows evaluation and execution of arbitrary commands by PM
-                    # Hardcoded. Might add as a trigger eventually
-                    if m_info['what'].startswith('.eval'):
-                        command = m_info['what'][6:]
-                        try:
-                            result = eval(command)
-                            self.send_pm(self.ws.master, result)
-                        except Exception as e:
-                            self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-                    elif msg[3].startswith('.exec'):
-                        command = m_info['what'][6:].split('\n')
-                        command = '\n'.join(command)
-                        try:
-                            exec command
-                            self.send_pm(self.ws.master, 'success')
-                        except Exception as e:
-                            self.send_pm(self.ws.master, str(e) + ': ' + e.__doc__)
-
         # User list is currently hardcoded here. Might move this to triggers later on
         elif m_info['where'] == 'j' and condense(m_info['who']) not in map(condense, self.current_users[room]):
             self.current_users[room].append(msg[1])
