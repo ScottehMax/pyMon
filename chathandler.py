@@ -160,7 +160,7 @@ class ChatHandler:
                                  (e.message, e.args, trigger))
 
         # User list is currently hardcoded here. Might move this to triggers later on
-        elif m_info['where'] == 'j' and condense(m_info['who']) not in map(condense, self.current_users[room]):
+        if m_info['where'] == 'j' and condense(m_info['who']) not in map(condense, self.current_users[room]):
             self.current_users[room].append(msg[1])
 
         elif m_info['where'] == 'l':
