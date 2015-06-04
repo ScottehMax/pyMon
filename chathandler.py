@@ -196,9 +196,10 @@ class ChatHandler:
                       5: 'quints',
                       6: 'sexts',
                       7: 'septs',
-                      8: 'octs'}
+                      8: 'octs',
+                      9: 'nons'}
 
-            if m_info['all'][1].startswith('<div class="infobox">Random number'):
+            if m_info['all'][1].startswith('<div class="infobox">Roll '):
                 raw_msg = msg[1][21:-6]  # Strips the leading HTML
 
                 # Don't try and understand the next line, it takes raw_msg as input and 
