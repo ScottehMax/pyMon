@@ -35,7 +35,7 @@ class BattleHandler:
         for who, battle_format in info.iteritems():
             print who, battle_format
 
-            if battle_format in ['randombattle', 'challengecup1vs1']:
+            if battle_format in ['randombattle', 'challengecup1v1']:
                 self.ch.send_msg('', '/utm')
                 self.ch.send_msg('', '/accept %s' % who)
 
