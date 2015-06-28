@@ -10,7 +10,7 @@ class StatCalc(Trigger):
 
     def response(self, info):
         args = info['what'][1:].split()
-        if len(args[0]) <= 6:
+        if len(args[0]) <= 5:
             return ''
         return [self.calc(args)]
 
@@ -45,16 +45,13 @@ class StatCalc(Trigger):
                         base = float(match_result.groups()[0])
                     elif i == 1:
                         o_level = float(match_result.groups()[0])
-                        if not asbase:
-                            level = o_level
+                        if not asbase: level = o_level
                     elif i == 2:
                         o_ev = float(match_result.groups()[0])
-                        if not asbase:
-                            ev = o_ev
+                        if not asbase: ev = o_ev
                     elif i == 3:
                         o_iv = float(match_result.groups()[0])
-                        if not asbase:
-                            iv = o_iv
+                        if not asbase: iv = o_iv
                     elif i == 4:
                         if asbase:
                             o_plus = float(match_result.groups()[0])
@@ -128,7 +125,10 @@ class StatCalc(Trigger):
                                                                                              int(o_level), o_modifier,
                                                                                              o_naturemod)
         else:
-            result += 'results in a stat of %s ' % stat
+            if stat == 420:
+                result += 'results in a stat of 420 (blaze it).'
+            else:
+                result += 'results in a stat of %s ' % stat
 
         if result[-1] == ' ':
             result = result[:-1] + '.'
