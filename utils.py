@@ -51,9 +51,9 @@ def get_thread():
 
     for page in catalog:
         for thread in page['threads']:
-            if ((thread.get('sub') and 'showderp' in thread.get('sub')) or
-                    (thread.get('name') and 'showderp' in thread.get('name')) or
-                    (thread.get('com') and 'showderp' in thread.get('com'))) and thread.get('last_replies'):
+            if (('showderp' in thread.get('sub', '').lower()) or
+               ('showderp' in thread.get('name', '').lower()) or
+               ('showderp' in thread.get('com', '').lower())) and thread.get('last_replies'):
 
                 reply_time = thread['last_replies'][-1]['time']
 
@@ -64,13 +64,25 @@ def get_thread():
     return newest_thread
 
 
+def get_rank(user, room, ch):
+    if room not in ch.current_users:
+        return False
+    else:
+        for r_user in ch.current_users[room]:
+            if condense(user) == condense(r_user):
+                result = r_user[0]
+                return result
+        return False
+
+
 def get_battle(ch):
-        battle_regex = "(https?\\:\\/\\/play\\.pokemonshowdown\\.com\\/battle-(?:FORMATS)\\-\\d+)"
+        battle_regex = "((https?\\:\\/\\/)?play\\.pokemonshowdown\\.com\\/battle-(?:FORMATS)\\-\\d+)"
+
         real_regex = re.compile(battle_regex.replace('FORMATS', '|'.join(ch.battle_formats)))
 
         thread_info = get_thread()
 
-        battles = []
+        battle = False
 
         if thread_info['no'] == 0:
             return False
@@ -83,9 +95,9 @@ def get_battle(ch):
             if post.get('com'):
                 m = real_regex.search(post.get('com').replace('<wbr>', ''))
                 if m:
-                    battles.append([m.group(), post['time']])
+                    battle = [m.group(), post['time']]
 
-        return battles
+        return battle
 
 
 def load_js_obj_literal(j):
