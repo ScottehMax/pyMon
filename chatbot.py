@@ -66,7 +66,13 @@ class Chatbot(WebSocketClient):
 
             if downmsg == 'challstr':
                 print '%s: Attempting to login...' % self.user
-                assertion = utils.login(self.user, self.config.get('Chatbot', 'password'), msg[3], msg[2])
+                assertion = utils.old_login(self.user, 
+                                            self.config.get('Chatbot', 'password'), 
+                                            msg[3], 
+                                            msg[2])
+                #assertion = utils.login(self.user, 
+                #                        self.config.get('Chatbot','password'), 
+                #                        '|'.join(msg[2:]))
 
                 if assertion is None:
                     raise Exception('%s: Could not login' % self.user)
@@ -76,7 +82,8 @@ class Chatbot(WebSocketClient):
             elif downmsg == 'formats':
                 data = '|'.join(msg[2:])
 
-                # this takes all of the formats data PS sends on connection and turns it into a list
+                # this takes all of the formats data PS sends on connection 
+                # and turns it into a list
                 self.ch.battle_formats = map(utils.condense,
                                              (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))
                                               ).split('|'))[1:]
@@ -93,7 +100,8 @@ class Chatbot(WebSocketClient):
                         print '%s: Joining room %s.' % (self.user, r)
                         self.ch.queue_message('|/join %s' % r)
 
-            elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users', 'raw', ':', 'init']:
+            elif downmsg in ['c', 'c:', 'pm', 'j', 'n', 'l', 'users', 'raw', 
+                             ':', 'init']:
                 print 'match', downmsg
                 print msg
                 self.ch.handle(msg[1:], room)

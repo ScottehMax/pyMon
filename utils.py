@@ -10,13 +10,33 @@ def condense(string):
     return (re.sub(r'[^A-Za-z0-9]', '', string)).lower()
 
 
-def login(username, password, challenge, challengekeyid):
+def old_login(username, password, challenge, challengekeyid):
     url = 'http://play.pokemonshowdown.com/action.php'
     values = {'act': 'login',
               'name': username,
               'pass': password,
               'challengekeyid': challengekeyid,
               'challenge': challenge
+              }
+
+    r = requests.post(url, data=values)
+
+    try:
+        response = json.loads(r.text[1:])  # the JSON response starts with a ]
+    except Exception as e:
+        print e
+        return None
+    assertion = response['assertion']
+
+    return assertion
+
+
+def login(username, password, challstr):
+    url = 'http://play.pokemonshowdown.com/action.php'
+    values = {'act': 'login',
+              'name': username,
+              'pass': password,
+              'challstr': challstr
               }
 
     r = requests.post(url, data=values)
