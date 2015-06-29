@@ -240,7 +240,7 @@ class BattleAdapter:
 
                 mon_info = msg[2].split(', ')
                 mon_species = utils.condense(mon_info[0])
-                mon_level = int(mon_info[1][1:]) if mon_info[1][1:] else 100
+                mon_level = int(mon_info[1][1:]) if len(mon_info) > 1 and mon_info[1][1:] else 100
 
                 print 'Encountered a level %s %s' % (mon_level, mon_species)
                 self.active_opponent = battleutils.Pokemon(species=mon_species, level=mon_level)
