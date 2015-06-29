@@ -211,7 +211,8 @@ class Battle:
             moninfo.append('Genderless')
 
         print 'new moninfo', moninfo
-        mon = Pokemon(species=moninfo[0], level=int(moninfo[1][1:]), gender=moninfo[2])
+        level = int(moninfo[1][1:]) if moninfo[1][1:] else 100
+        mon = Pokemon(species=moninfo[0], level=level, gender=moninfo[2])
         player.team.append(mon)
 
 
