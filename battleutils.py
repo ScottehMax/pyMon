@@ -204,15 +204,15 @@ class Battle:
         self.id = kwargs.get('id')
 
     def add_to_team(self, player, mon):
-        moninfo = mon.split(', ')
-        print moninfo
+        mon_info = mon.split(', ')
+        print mon_info
 
-        if len(moninfo) == 2:
-            moninfo.append('Genderless')
+        if len(mon_info) == 2:
+            mon_info.append('Genderless')
 
-        print 'new moninfo', moninfo
+        print 'new moninfo', mon_info
         level = int(mon_info[1][1:]) if len(mon_info) > 1 and mon_info[1][1:] else 100
-        mon = Pokemon(species=moninfo[0], level=level, gender=moninfo[2])
+        mon = Pokemon(species=mon_info[0], level=level, gender=mon_info[2])
         player.team.append(mon)
 
 
