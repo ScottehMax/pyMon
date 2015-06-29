@@ -1,5 +1,6 @@
 import json
 import random
+import re
 
 import utils
 import battleutils
@@ -48,6 +49,7 @@ class BattleAdapter:
 
     def __init__(self, args):
         self.id = args['id']
+        self.format = re.match(r'battle-(.*?)-\d+', self.id).groups()[0]
         self.ch = args['ch']
         self.bh = args['bh']
         self.rqid = 0
@@ -104,16 +106,16 @@ class BattleAdapter:
             print 'Best score is %s - score %s' % (best_move, best_score)            
             return '/move ' + best_move
         else:
-            b_switch = self.best_switch(active, self.sidedata, target)
-            if b_switch != '/switch 1':
-                b_mon_switch_id = b_switch.split('/switch ')[1]
-                b_mon_switch = self.sidedata.get('pokemon')[int(b_mon_switch_id) - 1]
-                b_mon_species = b_mon_switch.get('details').split(', ')[0]
-                print 'Score not good enough. switching to %s' % b_mon_species
-                return b_switch
-            else:
-                print 'No good other options. using %s' % best_move
-                return '/move ' + best_move
+            if self.format not in ['challengecup1v1']:
+                b_switch = self.best_switch(active, self.sidedata, target)
+                if b_switch != '/switch 1':
+                    b_mon_switch_id = b_switch.split('/switch ')[1]
+                    b_mon_switch = self.sidedata.get('pokemon')[int(b_mon_switch_id) - 1]
+                    b_mon_species = b_mon_switch.get('details').split(', ')[0]
+                    print 'Score not good enough. switching to %s' % b_mon_species
+                    return b_switch
+            print 'No good other options. using %s' % best_move
+            return '/move ' + best_move
 
     def best_switch(self, active, sidedata, target):
         print 'call to switch'
