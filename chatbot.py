@@ -85,7 +85,7 @@ class Chatbot(WebSocketClient):
                 # this takes all of the formats data PS sends on connection 
                 # and turns it into a list
                 self.ch.battle_formats = map(utils.condense,
-                                             (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'[,#]', '', data)))
+                                             (re.sub(r'\|\d\|[^|]+', '', ('|' + re.sub(r'(,[0-9a-f])', '', data)))
                                               ).split('|'))[1:]
 
             elif downmsg == 'updateuser':

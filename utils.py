@@ -96,8 +96,7 @@ def get_rank(user, room, ch):
 
 
 def get_battle(ch):
-        battle_regex = "((https?\\:\\/\\/)?play\\.pokemonshowdown\\.com\\/battle-(?:FORMATS)\\-\\d+)"
-
+        battle_regex = "((https?\\:\\/\\/)?(play\\.pokemonshowdown\\.com|.*?\\.psim\\.us)\\/(battle-(?:FORMATS)\\-\\d+))"
         real_regex = re.compile(battle_regex.replace('FORMATS', '|'.join(ch.battle_formats)))
 
         thread_info = get_thread()
