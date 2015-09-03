@@ -108,7 +108,11 @@ def get_battle(ch):
 
         r = requests.get('http://a.4cdn.org/vp/res/%s.json' % thread_info['no'])
 
-        thread = json.loads(r.text)
+        try:
+            thread = json.loads(r.text)
+        except ValueError:
+            print "Unable to load battle response"
+            return False
 
         for post in thread['posts']:
             if post.get('com'):
