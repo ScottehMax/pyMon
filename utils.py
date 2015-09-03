@@ -103,7 +103,7 @@ def get_battle(ch):
 
         battle = False
 
-        if thread_info['no'] == 0:
+        if not thread_info or thread_info['no'] == 0:
             return False
 
         r = requests.get('http://a.4cdn.org/vp/res/%s.json' % thread_info['no'])
