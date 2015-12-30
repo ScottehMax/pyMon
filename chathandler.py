@@ -5,6 +5,7 @@ import time
 import os
 import imp
 import inspect
+import logging
 
 import redis
 import concurrent.futures as futures
@@ -110,6 +111,8 @@ class ChatHandler:
             response = trigger.response(m_info)
             return response
         except Exception as e:
+            logging.error("Crashed: %s, %s, %s, %s - %s" %
+                          (e.message, e.args, trigger, type(e), m_info))
             self.send_pm(self.ws.master,
                          "Crashed: %s, %s, %s, %s" %
                          (e.message, e.args, trigger, type(e)))
@@ -155,6 +158,8 @@ class ChatHandler:
                         future.m_info = m_info
                         future.add_done_callback(self.future_callback)
                 except Exception as e:
+                    logging.error("Crashed in match: %s, %s, %s, %s - %s" %
+                                  (e.message, e.args, trigger, type(e), m_info))
                     self.send_pm(self.ws.master,
                                  "Crashed in match: %s, %s, %s" %
                                  (e.message, e.args, trigger))
