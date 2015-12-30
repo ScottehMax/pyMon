@@ -1,7 +1,8 @@
 import re
 import json
 from pyparsing import (Suppress, Regex, quotedString, Word, alphas,
-                       alphanums, oneOf, Forward, Optional, dictOf, delimitedList, Group, removeQuotes)
+                       alphanums, oneOf, Forward, Optional, dictOf,
+                       delimitedList, Group, removeQuotes)
 
 import requests
 
