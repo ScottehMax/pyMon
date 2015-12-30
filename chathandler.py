@@ -201,6 +201,9 @@ class ChatHandler:
                       10: 'decs'}
 
             if m_info['all'][1].startswith('<div class="infobox">Roll '):
+                if '+' in m_info['all'][1]:
+                    # dirty cheaters, trying to fake GETs
+                    return
                 raw_msg = msg[1][21:-6]  # Strips the leading HTML
 
                 # Don't try and understand the next line, it takes raw_msg as input and 
