@@ -111,8 +111,8 @@ class ChatHandler:
             return response
         except Exception as e:
             self.send_pm(self.ws.master,
-                         "Crashed: %s, %s, %s" %
-                         (e.message, e.args, trigger))
+                         "Crashed: %s, %s, %s, %s" %
+                         (e.message, e.args, trigger, type(e)))
 
     def future_callback(self, future):
         response = future.result()
