@@ -1,8 +1,6 @@
 import re
 import json
-from pyparsing import (Suppress, Regex, quotedString, Word, alphas,
-                       alphanums, oneOf, Forward, Optional, dictOf,
-                       delimitedList, Group, removeQuotes)
+import _jsonnet
 
 import requests
 
@@ -133,15 +131,5 @@ def load_js_obj_literal(j):
     j = j.replace('\n', '').replace('\t', '')
     j = j.replace(';', '')
     j = re.sub(r'//.*?{', r'{', j)
-    LBRACK, RBRACK, LBRACE, RBRACE, COLON, COMMA = map(Suppress,"[]{}:,")
-    integer = Regex(r"[+-]?\d+").setParseAction(lambda t:int(t[0]))
-    real = Regex(r"[+-]?\d+\.\d*").setParseAction(lambda t:float(t[0]))
-    string_ = Word(alphas,alphanums+"_") | quotedString.setParseAction(removeQuotes)
-    bool_ = oneOf("true false").setParseAction(lambda t: t[0]=="true")
-    item = Forward()
-    key = string_
-    dict_ = LBRACE - Optional(dictOf(key+COLON, item+Optional(COMMA))) + RBRACE
-    list_ = LBRACK - Optional(delimitedList(item)) + RBRACK
-    item << (real | integer | string_ | bool_ | Group(list_ | dict_ ))
-    result = item.parseString(j,parseAll=True)[0]
+    result = json.loads(_jsonnet.evaluate_snippet('snippet', j))
     return result

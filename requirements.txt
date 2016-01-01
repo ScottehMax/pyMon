@@ -3,5 +3,4 @@ redis==2.10.3
 requests==2.4.3
 requests-futures==0.9.5
 ws4py==0.3.4
-pyparsing==2.0.1
-
+jsonnet==0.8.6
